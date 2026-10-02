@@ -108,15 +108,20 @@ async function api(path, { method = 'GET', body } = {}) {
 
 /* ------------------------------------------------------------------ 读取仓库 */
 /** 用 raw 媒体类型读文本：绕开 Contents API 对 >1MB 文件不再返回 content 的限制
-    （文章多了以后 _src/posts.json 会超过 1MB，那时 base64 那条路就断了）。 */
+    （文章多了以后 _src/posts.json 会超过 1MB，那时 base64 那条路就断了）。
+    加 cb 是防 CDN：刚提交完立刻读同一个 URL，GitHub 可能还是旧的那一份。 */
 async function getRawText(path) {
-  const res = await fetch(`${API}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`, {
-    headers: {
-      Authorization: 'Bearer ' + S.token,
-      Accept: 'application/vnd.github.raw',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  });
+  const res = await fetch(
+    `${API}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}&cb=${Date.now().toString(36)}`,
+    {
+      headers: {
+        Authorization: 'Bearer ' + S.token,
+        Accept: 'application/vnd.github.raw',
+        'Cache-Control': 'no-cache',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    }
+  );
   if (!res.ok) {
     const e = new Error(`读 ${path} → ${res.status}`);
     e.status = res.status;
@@ -780,11 +785,14 @@ function bind() {
         extra
       );
       S.cover = null;
+      $('editor').classList.add('a-hidden');
       renderPostList();
       fillCategories();
-      $('editor').classList.add('a-hidden');
-      await loadRemote();
-      renderPostList();
+      /* 这里**故意不重新读仓库**：刚提交完立刻去读同一个 URL，GitHub 可能还缓存着
+         提交前的那一份，读回来会把内存状态退回到旧版本（第 9 轮实测踩到：
+         新建的文章在列表里消失，连累后面的删除找不到那一行）。
+         内存里这份才是"刚提交上去的内容"，就让它当准。 */
+      logDim('列表已按刚提交的内容更新（不用再读一次仓库）。');
     } catch (e) {
       logBad('发布失败：' + e.message);
       logWarn('仓库没有被改动；可以修好再点一次。若提示 ref 冲突，点「重新读取仓库」再试。');
