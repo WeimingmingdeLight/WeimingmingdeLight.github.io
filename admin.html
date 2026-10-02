@@ -74,6 +74,37 @@
         <ul class="a-list" id="post-list"></ul>
       </div>
 
+      <!-- ============ 删除确认区（第 9 轮）============
+           独立成一块、必须手输 slug 才能确认 —— 摩擦是故意的。 -->
+      <section class="a-card a-hidden" id="danger">
+        <h2>删除文章</h2>
+        <p>要删除的是：<strong id="del-title"></strong>
+          <span class="a-mono a-muted">（<span id="del-slug"></span>）</span></p>
+
+        <div class="a-note a-note--bad">
+          <strong>删除会发生什么</strong><br>
+          · 线上页面、封面、索引、sitemap 里的这一篇都会被删掉（一次提交，约 1 分钟生效）<br>
+          · <strong>Git 历史里的正文不会消失</strong>：仓库是公开的，用旧提交地址仍然读得到这一篇。
+          真要连历史一起清除，只能删库重建（会丢掉全部提交历史，giscus 参数也会变）——
+          那种操作找我一起做。<br>
+          · 这一篇的 GitHub 讨论串（评论）不会自动消失，页面会给你链接手工删。
+        </div>
+
+        <div class="a-field">
+          <label for="del-confirm">确认请手输这一篇的 slug：<span class="a-mono" id="del-hint"></span></label>
+          <input type="text" id="del-confirm" autocomplete="off" spellcheck="false" placeholder="照着上面括号里的字符逐个输入">
+        </div>
+        <div class="a-row" style="margin-bottom:12px">
+          <input type="checkbox" id="del-backup" checked>
+          <label for="del-backup" class="a-muted">先下载一份备份 JSON 到我的电脑（含完整正文与封面地址，默认勾选）</label>
+        </div>
+        <div class="a-row">
+          <button class="a-btn a-btn--danger-solid" id="btn-del-go" type="button" disabled>确认删除并发布</button>
+          <button class="a-btn a-btn--ghost" id="btn-del-cancel" type="button">取消</button>
+          <span class="a-muted" id="del-msg"></span>
+        </div>
+      </section>
+
       <section class="a-card a-hidden" id="editor">
         <h2 id="editor-title">编辑</h2>
         <div class="a-grid2">
@@ -231,7 +262,7 @@
           <li><strong>渲染在哪</strong>：就在这个浏览器里，用的是和本地构建脚本<strong>同一个文件</strong>（<span class="a-mono">assets/js/render-core.js</span>，由本地构建时逐字节复制）。所以网页上发的和本地发的产物是一样的。</li>
           <li><strong>没做什么</strong>：没有后端、没有数据库、没有第三方服务；页面本身不含任何密钥，别人打开这个地址也只会看到一个令牌输入框。</li>
           <li><strong>素材规矩</strong>：D 盘素材库里的文稿，由我取用时<strong>每次都会先问你</strong>；你自己在这里粘贴/上传的内容，是你自己的动作，不用再批一次。<span class="a-mono">xin-chun</span>（【歆春】）永久排除，不要加回来。</li>
-          <li><strong>删文章</strong>：这里不提供删除（删除要连带清掉封面、索引与讨论串，属于危险操作）。要下架告诉我，我用 <span class="a-mono">retire_post.mjs</span> 走完整流程。</li>
+          <li><strong>删文章</strong>：文章列表每行有「删除」，但要做三步：手输该篇 slug 确认 → 自动下载一份备份 JSON → 才提交。删除会同时清掉页面、封面、索引与 sitemap 里的这一篇，但 <strong>Git 历史里的正文不会消失</strong>（仓库是公开的，旧提交地址仍读得到）；讨论串也要手工删。想连历史一起清除只有删库重建，那种操作找我一起做。</li>
         </ul>
       </div>
     </section>

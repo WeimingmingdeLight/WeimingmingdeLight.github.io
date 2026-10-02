@@ -37,6 +37,8 @@ const S = {
   remoteBlobs: new Map(), // path -> sha（远端 main 的 tree）
   editing: null,      // 正在编辑的 slug（null = 新建）
   cover: null,        // { path, bytes, dataUrl, dirty }
+  deletes: new Map(), // slug -> record：**本次会话里明确确认过**要删的篇目（guard 只认这份清单）
+  pendingDelete: null, // 正在确认删除的篇目
 };
 
 /* ------------------------------------------------------------------ 小工具 */
@@ -188,13 +190,23 @@ async function plan(extraFiles = {}) {
     else changed.push({ path, bytes, sha, reason: S.remoteBlobs.has(path) ? '内容有变' : '新增' });
   }
 
-  /* 待删除：仓库里有、但渲染结果里已经没有的文章页（例如本地把某篇从 posts.json 去掉了） */
+  /* 待删除：只删**本次会话明确确认过**的篇目（页面 + 该篇封面）。
+     其他"仓库里有、渲染结果里没有"的文件只列出来，不动 —— 那些可能是本地脚本
+     下架了但还没推送的产物，不该由这个页面替我做决定。 */
   const deletions = [];
-  for (const path of S.remoteBlobs.keys()) {
-    if (/^posts\/[^/]+\.html$/.test(path) && !wanted.has(path)) deletions.push(path);
+  for (const [slug, rec] of S.deletes) {
+    const page = `posts/${slug}.html`;
+    if (S.remoteBlobs.has(page)) deletions.push(page);
+    const cover = rec && rec.cover;
+    if (cover && S.remoteBlobs.has(cover) && !S.posts.some((p) => p.cover === cover)) {
+      deletions.push(cover);
+    }
   }
+  const orphans = [...S.remoteBlobs.keys()].filter(
+    (p) => /^posts\/[^/]+\.html$/.test(p) && !wanted.has(p) && !deletions.includes(p)
+  );
 
-  return { out, wanted, changed, unchanged, deletions };
+  return { out, wanted, changed, unchanged, deletions, orphans };
 }
 
 async function commitPlan(p, message) {
@@ -308,8 +320,53 @@ function renderPostList() {
     a.textContent = '查看';
     li.appendChild(a);
 
+    const b3 = document.createElement('button');
+    b3.className = 'a-btn a-btn--sm a-btn--danger';
+    b3.type = 'button';
+    b3.textContent = '删除';
+    b3.addEventListener('click', () => askDelete(p.slug));
+    li.appendChild(b3);
+
     ul.appendChild(li);
   }
+}
+
+/* ------------------------------------------------------------------ 删除：强确认 */
+function askDelete(slug) {
+  const p = S.posts.find((x) => x.slug === slug);
+  if (!p) return;
+  S.pendingDelete = p;
+  $('del-title').textContent = p.title;
+  $('del-slug').textContent = slug;
+  $('del-hint').textContent = slug;
+  $('del-confirm').value = '';
+  $('del-backup').checked = true;
+  $('btn-del-go').disabled = true;
+  $('del-msg').textContent = '';
+  $('editor').classList.add('a-hidden');
+  $('danger').classList.remove('a-hidden');
+  $('danger').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('del-confirm').focus();
+}
+
+/** 备份文件：浏览器写不了工作区，就让作者存一份到自己电脑上（与 retire_post.mjs 的语义一致） */
+function downloadBackup(rec) {
+  const payload = {
+    retiredAt: new Date().toISOString(),
+    note: 'Aphelion 站内管理台删除前导出的备份。含完整正文记录与封面地址；恢复时把 record 插回 site/_src/posts.json，并把封面放回原路径。',
+    slug: rec.slug,
+    coverUrl: rec.cover,
+    record: rec,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${rec.slug}.retired.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 /* ------------------------------------------------------------------ 界面：编辑器 */
@@ -511,10 +568,17 @@ function guard() {
     logBad('仓库内容还没读完（右上角显示"正在读取"时不要发布）—— 请稍等再点。');
     return false;
   }
-  const remotePosts = [...S.remoteBlobs.keys()].filter((p) => /^posts\/[^/]+\.html$/.test(p));
-  if (S.posts.length < remotePosts.length) {
+  const remoteSlugs = [...S.remoteBlobs.keys()]
+    .filter((p) => /^posts\/[^/]+\.html$/.test(p))
+    .map((p) => p.replace(/^posts\//, '').replace(/\.html$/, ''));
+  const localSlugs = new Set(S.posts.map((p) => p.slug));
+  /* 仓库里有、本地没有的篇目：只有"在删除确认区里明确确认过"的才允许真的少掉，
+     其余一律拒绝 —— 那说明状态错乱（第 8 轮的事故就是这么发生的）。 */
+  const missing = remoteSlugs.filter((s) => !localSlugs.has(s));
+  const unexpected = missing.filter((s) => !S.deletes.has(s));
+  if (unexpected.length) {
     logBad(
-      `拒发：内存里只有 ${S.posts.length} 篇，仓库里却有 ${remotePosts.length} 篇 —— 这样发出去会删掉文章。请点「重新读取仓库」后再操作。`
+      `拒发：仓库里有 ${unexpected.length} 篇不在本地（${unexpected.join(', ')}）—— 这样发出去会删除文章。请点「重新读取仓库」后再操作。`
     );
     return false;
   }
@@ -608,6 +672,54 @@ function bind() {
     }
   });
   $('btn-cancel').addEventListener('click', () => $('editor').classList.add('a-hidden'));
+
+  /* 删除确认区 */
+  $('del-confirm').addEventListener('input', () => {
+    const want = S.pendingDelete ? S.pendingDelete.slug : '';
+    $('btn-del-go').disabled = $('del-confirm').value.trim() !== want;
+  });
+  $('btn-del-cancel').addEventListener('click', () => {
+    S.pendingDelete = null;
+    $('danger').classList.add('a-hidden');
+  });
+  $('btn-del-go').addEventListener('click', async () => {
+    const rec = S.pendingDelete;
+    if (!rec) return;
+    if ($('del-confirm').value.trim() !== rec.slug) {
+      $('del-msg').textContent = 'slug 不一致，没有删除。';
+      return;
+    }
+    if ($('del-backup').checked) {
+      try {
+        downloadBackup(rec);
+        log(`已下载备份：${rec.slug}.retired.json（在浏览器的下载目录里）`);
+      } catch (e) {
+        logWarn('备份下载失败：' + e.message + '（不想在没有备份的情况下删，就先取消，改用 retire_post.mjs）');
+      }
+    }
+    S.deletes.set(rec.slug, rec);
+    S.posts = S.posts.filter((p) => p.slug !== rec.slug);
+    $('btn-del-go').disabled = true;
+    $('del-msg').textContent = '提交中…';
+    try {
+      await publish(`删除文章：${rec.title}`);
+      logOk(`「${rec.title}」已删除`);
+      logDim(`讨论串（若已创建，需要手工删）：https://github.com/${OWNER}/${REPO}/discussions?discussions_q=${encodeURIComponent(rec.slug)}`);
+      logWarn('提醒：Git 历史里的正文**仍然可读**。要连历史一起清除，只能删库重建 —— 找我一起做。');
+      logWarn('提醒：本机那份副本现在过期了。以后要动本地，先跑 node tools\\pull_src.mjs。');
+      $('danger').classList.add('a-hidden');
+      S.pendingDelete = null;
+      renderPostList();
+      fillCategories();
+    } catch (e) {
+      logBad('删除失败：' + e.message);
+      $('del-msg').textContent = '失败：' + e.message;
+      /* 失败就把内存状态放回去，避免"界面里没了、仓库里还在" */
+      S.deletes.delete(rec.slug);
+      if (!S.posts.some((p) => p.slug === rec.slug)) S.posts.push(rec);
+      renderPostList();
+    }
+  });
   $('btn-preview').addEventListener('click', () => {
     const { blocks } = currentParse();
     const box = $('preview');
@@ -741,8 +853,15 @@ function bind() {
       } else {
         logWarn(`有 ${p.changed.length} 个文件与仓库不同：`);
         for (const c of p.changed) logDim(`${c.reason}  ${c.path}`);
-        if (p.deletions.length) for (const d of p.deletions) logDim(`多余（仓库里有、渲染结果里没有）  ${d}`);
-        $('check-msg').textContent = `${p.changed.length} 个文件不同`;
+        if (p.deletions.length) {
+          logWarn(`已确认要删除 ${p.deletions.length} 个文件（点「确认删除并发布」才会真的删）：`);
+          for (const d of p.deletions) logDim(`将删除  ${d}`);
+        }
+        $('check-msg').textContent = `${p.changed.length} 个文件不同${p.deletions.length ? `，${p.deletions.length} 个待删除` : ''}`;
+      }
+      if (p.orphans.length) {
+        logWarn(`另有 ${p.orphans.length} 个文件是"仓库里有、渲染结果里没有"，本次**不会**动它们：`);
+        for (const o of p.orphans) logDim(`保留  ${o}`);
       }
     } catch (e) {
       logBad('自检失败：' + e.message);

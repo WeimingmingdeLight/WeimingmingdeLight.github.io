@@ -74,6 +74,11 @@ a { color: #1f4e79; }
 .a-btn--primary:hover { filter: brightness(1.12); }
 .a-btn--ghost { background: transparent; }
 .a-btn--danger { color: var(--a-danger); border-color: #e5c4c1; }
+.a-btn--danger:not([disabled]):hover { background: #fdf3f2; border-color: var(--a-danger); }
+/* 删除是"最后一次点击"级别的操作：确认按钮做实心红，跟编辑类按钮拉开距离 */
+.a-btn--danger-solid { background: var(--a-danger); border-color: var(--a-danger); color: #fff; }
+.a-btn--danger-solid:not([disabled]):hover { filter: brightness(1.12); }
+.a-btn--danger-solid[disabled] { background: #e9d6d4; border-color: #e9d6d4; color: #fff; }
 .a-btn--sm { padding: 4px 9px; font-size: 0.84rem; }
 .a-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .a-btn--on-dark { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: #fff; }
