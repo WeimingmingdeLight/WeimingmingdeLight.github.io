@@ -1,0 +1,173 @@
+/* Aphelion 站内管理台样式 —— 与站点正文样式解耦：这是一个工具页，不是内容页。
+   自带一套与站点同色系的令牌，始终亮色（工具要的是看清，不是氛围）。 */
+
+:root {
+  --a-bg: #f5f6f8;
+  --a-panel: #ffffff;
+  --a-line: #dfe3e8;
+  --a-text: #22272e;
+  --a-muted: #6b7280;
+  --a-primary: #2f4154;
+  --a-primary-text: #ffffff;
+  --a-accent: #2f6f4f;
+  --a-danger: #b3261e;
+  --a-warn: #8a6100;
+  --a-ok: #1f7a3f;
+  --a-radius: 10px;
+  --a-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--a-bg);
+  color: var(--a-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+a { color: #1f4e79; }
+
+.a-header {
+  background: var(--a-primary);
+  color: var(--a-primary-text);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.a-header__title { font-size: 1.02rem; font-weight: 600; letter-spacing: 0.02em; margin: 0; }
+.a-header__spacer { flex: 1; }
+.a-header__status { font-size: 0.86rem; opacity: 0.9; font-family: var(--a-mono); }
+
+.a-wrap { max-width: 1080px; margin: 0 auto; padding: 20px; }
+
+.a-card {
+  background: var(--a-panel);
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.a-card--flush { padding: 0; overflow: hidden; }
+.a-card h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.a-card h3 { margin: 18px 0 8px; font-size: 0.95rem; }
+.a-muted { color: var(--a-muted); font-size: 0.88rem; }
+.a-mono { font-family: var(--a-mono); }
+
+.a-btn {
+  appearance: none;
+  border: 1px solid var(--a-line);
+  background: var(--a-panel);
+  color: var(--a-text);
+  padding: 7px 13px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.a-btn:hover { border-color: #b9c0c8; }
+.a-btn--primary { background: var(--a-primary); border-color: var(--a-primary); color: #fff; }
+.a-btn--primary:hover { filter: brightness(1.12); }
+.a-btn--ghost { background: transparent; }
+.a-btn--danger { color: var(--a-danger); border-color: #e5c4c1; }
+.a-btn--sm { padding: 4px 9px; font-size: 0.84rem; }
+.a-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.a-btn--on-dark { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); color: #fff; }
+
+.a-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.a-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.a-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .a-grid2, .a-grid3 { grid-template-columns: 1fr; } }
+
+.a-field { margin-bottom: 12px; }
+.a-field > label { display: block; font-size: 0.85rem; color: var(--a-muted); margin-bottom: 4px; }
+.a-field input[type='text'], .a-field input[type='date'], .a-field input[type='password'],
+.a-field textarea, .a-field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--a-line);
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+  color: var(--a-text);
+}
+.a-field textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+.a-field textarea.a-body { min-height: 320px; font-family: var(--a-mono); font-size: 0.92rem; }
+.a-hint { color: var(--a-muted); font-size: 0.82rem; margin-top: 4px; }
+
+.a-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.a-tab {
+  border: 1px solid var(--a-line);
+  background: var(--a-panel);
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+}
+.a-tab[aria-selected='true'] { background: var(--a-primary); border-color: var(--a-primary); color: #fff; }
+
+.a-list { list-style: none; margin: 0; padding: 0; }
+.a-list li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--a-line);
+}
+.a-list li:last-child { border-bottom: 0; }
+.a-list img { width: 76px; height: 43px; object-fit: cover; border-radius: 6px; background: #e8eaed; flex: none; }
+.a-list__main { flex: 1; min-width: 0; }
+.a-list__title { font-weight: 600; }
+.a-list__meta { color: var(--a-muted); font-size: 0.82rem; font-family: var(--a-mono); }
+
+.a-log {
+  font-family: var(--a-mono);
+  font-size: 0.84rem;
+  background: #10151c;
+  color: #d7e0ea;
+  border-radius: 8px;
+  padding: 12px 14px;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.a-log:empty { display: none; }
+.a-log .ok { color: #7ee0a5; }
+.a-log .bad { color: #ff9d94; }
+.a-log .warn { color: #ffd479; }
+.a-log .dim { color: #8b98a8; }
+
+.a-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.78rem; border: 1px solid var(--a-line); }
+.a-badge--ok { color: var(--a-ok); border-color: #bfe0cb; background: #f0f9f3; }
+.a-badge--bad { color: var(--a-danger); border-color: #eccbc8; background: #fdf3f2; }
+.a-badge--warn { color: var(--a-warn); border-color: #ecdcb0; background: #fdf8ea; }
+
+.a-cover { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.a-cover img { width: 240px; height: 135px; object-fit: cover; border-radius: 8px; border: 1px solid var(--a-line); background: #e8eaed; }
+.a-cover__side { flex: 1; min-width: 220px; }
+
+.a-note {
+  border-left: 3px solid var(--a-warn);
+  background: #fdf8ea;
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+  margin: 10px 0;
+}
+.a-note--info { border-color: var(--a-primary); background: #eef2f7; }
+.a-note--bad { border-color: var(--a-danger); background: #fdf3f2; }
+
+.a-preview { border: 1px dashed var(--a-line); border-radius: 8px; padding: 12px; max-height: 260px; overflow: auto; background: #fbfcfd; }
+.a-preview p { margin: 0 0 0.8em; }
+.a-preview h2 { font-size: 1.05rem; margin: 1em 0 0.5em; }
+.a-preview .section-mark { font-family: var(--a-mono); color: var(--a-muted); }
+.a-preview blockquote { border-left: 3px solid var(--a-line); margin: 0.8em 0; padding-left: 12px; color: var(--a-muted); }
+
+.a-hidden { display: none !important; }
+.a-diff { font-family: var(--a-mono); font-size: 0.84rem; }

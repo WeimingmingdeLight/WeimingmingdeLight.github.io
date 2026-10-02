@@ -1548,6 +1548,22 @@ a.tag:hover,
   border: 0;
 }
 
+/* 文章底部评论区（第 8 轮）：每篇文章一个独立讨论串。
+   视觉上比留言板克制一点 —— 它长在正文后面，不该抢正文的注意力。 */
+.comments {
+  margin-top: var(--s8);
+  padding-top: var(--s6);
+  border-top: 1px solid var(--line);
+}
+
+.comments .section__head {
+  margin-bottom: var(--s3);
+}
+
+.comments .giscus-wrap {
+  min-height: 180px;
+}
+
 /* 提示条 */
 .toast {
   position: fixed;

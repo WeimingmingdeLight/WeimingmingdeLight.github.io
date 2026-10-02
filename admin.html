@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>站内管理台 · Aphelion</title>
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+<header class="a-header">
+  <h1 class="a-header__title">Aphelion 站内管理台</h1>
+  <span class="a-header__status" id="who">未连接</span>
+  <span class="a-header__spacer"></span>
+  <button class="a-btn a-btn--sm a-btn--on-dark a-hidden" id="btn-forget" type="button">忘记令牌</button>
+</header>
+
+<div class="a-wrap">
+
+  <!-- ============ 未连接：令牌闸门 ============ -->
+  <section class="a-card" id="gate">
+    <h2>先填一次你的 GitHub 令牌</h2>
+    <p class="a-muted">
+      这个页面就是本站的发布后台：上传新文章、更换封面、改简介。它需要你的授权才能写回仓库。
+      令牌只保存在<strong>这台设备的这个浏览器</strong>里（localStorage），不会写进网页、不会写进仓库、不会发给任何第三方；
+      页面上的所有请求都直接发往 <span class="a-mono">api.github.com</span>。
+    </p>
+
+    <div class="a-note">
+      <strong>怎么建令牌</strong>（只做一次）：GitHub → 右上头像 → Settings → Developer settings →
+      Personal access tokens → <em>Fine-grained tokens</em> → Generate new token。<br>
+      · Repository access：<span class="a-mono">Only select repositories</span> → 选
+      <span class="a-mono">WeimingmingdeLight.github.io</span><br>
+      · Permissions → Repository permissions → <span class="a-mono">Contents: Read and write</span>（其余全不用给）<br>
+      · 有效期按你习惯（建议 90 天）；过期了就回来换一个。
+      <br><br>
+      <strong>公用电脑上别留令牌</strong>：用完点右上角「忘记令牌」。令牌泄露的后果是别人能改这个仓库的**内容**（改不了仓库设置），
+      发现不对就去 GitHub 把那个令牌 Revoke 掉。
+    </div>
+
+    <div class="a-field">
+      <label for="token">令牌（github_pat_… 或 ghp_…）</label>
+      <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+      <div class="a-hint">粘贴后点「连接并验证」。验证只读你的用户名与该仓库权限。</div>
+    </div>
+    <div class="a-row">
+      <button class="a-btn a-btn--primary" id="btn-connect" type="button">连接并验证</button>
+      <span class="a-muted" id="gate-msg"></span>
+    </div>
+  </section>
+
+  <!-- ============ 已连接：主体 ============ -->
+  <div id="app" class="a-hidden">
+    <div class="a-tabs" role="tablist">
+      <button class="a-tab" role="tab" id="tab-posts" aria-selected="true" type="button">文章</button>
+      <button class="a-tab" role="tab" id="tab-bio" aria-selected="false" type="button">简介</button>
+      <button class="a-tab" role="tab" id="tab-check" aria-selected="false" type="button">自检</button>
+      <button class="a-tab" role="tab" id="tab-help" aria-selected="false" type="button">说明</button>
+    </div>
+
+    <!-- 文章 -->
+    <section id="pane-posts">
+      <div class="a-card">
+        <div class="a-row">
+          <button class="a-btn a-btn--primary" id="btn-new" type="button">＋ 上传新文本</button>
+          <button class="a-btn" id="btn-reload" type="button">重新读取仓库</button>
+          <span class="a-header__spacer"></span>
+          <span class="a-muted" id="posts-count"></span>
+        </div>
+      </div>
+
+      <div class="a-card a-card--flush">
+        <ul class="a-list" id="post-list"></ul>
+      </div>
+
+      <section class="a-card a-hidden" id="editor">
+        <h2 id="editor-title">编辑</h2>
+        <div class="a-grid2">
+          <div class="a-field">
+            <label for="f-title">标题（会显示在列表与页面顶部）</label>
+            <input type="text" id="f-title">
+          </div>
+          <div class="a-field">
+            <label for="f-shorttitle">短标题（首页卡片用，留空则用标题）</label>
+            <input type="text" id="f-shorttitle">
+          </div>
+          <div class="a-field">
+            <label for="f-subtitle">副标题（可留空）</label>
+            <input type="text" id="f-subtitle">
+          </div>
+          <div class="a-field">
+            <label for="f-slug">网址标识 slug（小写字母/数字/连字符；<strong>定下后别改</strong>，改了等于换一篇文章、评论也会跟丢）</label>
+            <input type="text" id="f-slug" spellcheck="false">
+            <div class="a-hint">文章地址将是 <span class="a-mono" id="slug-preview">posts/…html</span></div>
+          </div>
+          <div class="a-field">
+            <label for="f-date">日期（只是归档顺序，不代表创作日期）</label>
+            <input type="date" id="f-date">
+          </div>
+          <div class="a-field">
+            <label for="f-category">分类</label>
+            <input type="text" id="f-category" list="cat-list" placeholder="同人 / 杂文 / 设定 / 练笔">
+            <datalist id="cat-list"></datalist>
+          </div>
+          <div class="a-field">
+            <label for="f-series">系列（可留空）</label>
+            <input type="text" id="f-series">
+          </div>
+          <div class="a-field">
+            <label for="f-tags">标签（逗号分隔）</label>
+            <input type="text" id="f-tags" placeholder="赠文, OC, 短篇">
+          </div>
+          <div class="a-field">
+            <label for="f-headlabel">前置信息框标题（如「作者注」「作品信息」；留空则不显示那个框）</label>
+            <input type="text" id="f-headlabel">
+          </div>
+          <div class="a-field">
+            <label for="f-summary">摘要（列表页显示；留空会自动取正文第一段）</label>
+            <input type="text" id="f-summary">
+          </div>
+        </div>
+
+        <h3>封面</h3>
+        <div class="a-cover">
+          <img id="cover-preview" alt="封面预览" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+          <div class="a-cover__side">
+            <div class="a-row">
+              <input type="file" id="cover-file" accept="image/*" class="a-hidden" aria-label="选择封面图片">
+              <button class="a-btn" id="btn-cover" type="button">选择图片…</button>
+              <select id="cover-vshift" class="a-btn" aria-label="封面取景位置">
+                <option value="0.5">取景：中间</option>
+                <option value="0">取景：顶部</option>
+                <option value="1">取景：底部</option>
+              </select>
+            </div>
+            <div class="a-field" style="margin-top:10px">
+              <label for="f-coveralt">封面说明（给看不见图的人，也给搜索引擎）</label>
+              <input type="text" id="f-coveralt" placeholder="例如：深蓝底色上几只白色飞鸟的剪影">
+            </div>
+            <div class="a-muted" id="cover-note">还没有选图。图片会被裁成 800×450 的 JPEG 再上传。</div>
+          </div>
+        </div>
+
+        <h3>正文</h3>
+        <div class="a-row" style="margin-bottom:8px">
+          <label class="a-muted" for="f-mode">分段方式</label>
+          <select id="f-mode" class="a-btn">
+            <option value="auto">自动判断</option>
+            <option value="blank">按空行分段</option>
+            <option value="line">每行一段</option>
+          </select>
+          <span class="a-muted" id="parse-note"></span>
+        </div>
+        <div class="a-field">
+          <label for="f-body">正文</label>
+          <textarea id="f-body" class="a-body" spellcheck="false" placeholder="把正文粘贴到这里。
+
+支持：空行分段（没有空行时每行一段）
+# 小标题   ## 次级小标题
+> 引用
+--- 分隔线
+1. 有序列表   · 无序列表
+键：值（summary / 配对 / 出场 / 预警 等已知键会进前置信息框）"></textarea>
+          <div class="a-hint">段落之间空一行最稳；从 Word/PDF 里复制出来的文本通常没有空行，那种情况会自动按「每行一段」处理。</div>
+        </div>
+
+        <div class="a-row">
+          <button class="a-btn a-btn--primary" id="btn-save" type="button">保存并发布</button>
+          <button class="a-btn" id="btn-preview" type="button">只看解析结果</button>
+          <button class="a-btn a-btn--ghost" id="btn-cancel" type="button">取消</button>
+        </div>
+        <div class="a-preview a-hidden" id="preview"></div>
+      </section>
+    </section>
+
+    <!-- 简介 -->
+    <section id="pane-bio" class="a-hidden">
+      <div class="a-card">
+        <h2>个人简介</h2>
+        <p class="a-muted">显示在首页「关于我」和「关于 / 联系」页。空行分段；<span class="a-mono">**这样**</span>可以加粗。
+          这里<strong>不能写 HTML 标签</strong>（会被当普通文字显示出来）。</p>
+        <div class="a-field">
+          <label for="f-bio">简介段落</label>
+          <textarea id="f-bio" spellcheck="false"></textarea>
+        </div>
+        <div class="a-grid2">
+          <div class="a-field">
+            <label for="f-tagline">站点副标题（首页大标题下面那句）</label>
+            <input type="text" id="f-tagline">
+          </div>
+          <div class="a-field">
+            <label for="f-author">署名</label>
+            <input type="text" id="f-author">
+          </div>
+        </div>
+        <div class="a-field">
+          <label for="f-sitetags">站点标签（逗号分隔）</label>
+          <input type="text" id="f-sitetags">
+        </div>
+        <div class="a-row">
+          <button class="a-btn a-btn--primary" id="btn-save-bio" type="button">保存并发布</button>
+          <button class="a-btn" id="btn-bio-preview" type="button">预览</button>
+        </div>
+        <div class="a-preview a-hidden" id="bio-preview"></div>
+      </div>
+    </section>
+
+    <!-- 自检 -->
+    <section id="pane-check" class="a-hidden">
+      <div class="a-card">
+        <h2>自检：站内渲染 == 仓库现状？</h2>
+        <p class="a-muted">
+          用仓库当前的内容，在<strong>这个浏览器里</strong>重跑一遍全部页面渲染，再逐个文件与仓库里的 blob 比对。
+          正常结果是「0 处差异」—— 那说明网页端和本地构建脚本产出完全一致。
+          这个过程<strong>只读不写</strong>，随时可以点。
+        </p>
+        <div class="a-row">
+          <button class="a-btn a-btn--primary" id="btn-check" type="button">开始自检</button>
+          <span class="a-muted" id="check-msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 说明 -->
+    <section id="pane-help" class="a-hidden">
+      <div class="a-card">
+        <h2>它做了什么、没做什么</h2>
+        <ul>
+          <li><strong>做了什么</strong>：把你的改动渲染成整站页面，用你自己的令牌一次性提交到仓库（一个提交），GitHub Pages 大约一分钟后更新。</li>
+          <li><strong>渲染在哪</strong>：就在这个浏览器里，用的是和本地构建脚本<strong>同一个文件</strong>（<span class="a-mono">assets/js/render-core.js</span>，由本地构建时逐字节复制）。所以网页上发的和本地发的产物是一样的。</li>
+          <li><strong>没做什么</strong>：没有后端、没有数据库、没有第三方服务；页面本身不含任何密钥，别人打开这个地址也只会看到一个令牌输入框。</li>
+          <li><strong>素材规矩</strong>：D 盘素材库里的文稿，由我取用时<strong>每次都会先问你</strong>；你自己在这里粘贴/上传的内容，是你自己的动作，不用再批一次。<span class="a-mono">xin-chun</span>（【歆春】）永久排除，不要加回来。</li>
+          <li><strong>删文章</strong>：这里不提供删除（删除要连带清掉封面、索引与讨论串，属于危险操作）。要下架告诉我，我用 <span class="a-mono">retire_post.mjs</span> 走完整流程。</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="a-log" id="log"></div>
+  </div>
+</div>
+
+<script type="module" src="assets/js/admin.js"></script>
+</body>
+</html>
