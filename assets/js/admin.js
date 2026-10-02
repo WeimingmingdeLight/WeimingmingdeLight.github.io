@@ -28,6 +28,7 @@ const $ = (id) => document.getElementById(id);
 const S = {
   token: '',
   login: '',
+  loaded: false,      // 仓库内容是否已完整读入 —— 没读入就绝不能发布（见 guard）
   posts: [],          // _src/posts.json 的内容
   postsText: '',      // 原样保留，未改动时不重写（避免无意义 diff）
   site: {},           // _src/site.json 的内容
@@ -496,8 +497,40 @@ function collectPost() {
   return rec;
 }
 
+/* ------------------------------------------------------------------ 发布前的闸门 */
+/* 这条闸门是**真实事故**换来的（2026-10-03）：在一次端到端实测里，页面刚连上、
+   loadRemote() 还在飞的时候点了「保存并发布」，于是内存里只有"正在新建的这一篇"，
+   push 出去就把仓库里的 _src/posts.json 覆盖成了 1 篇 —— 线上其余文章全部消失
+  （页面还在，但列表/首页/索引都只剩下那一篇）。本地有备份，所以几分钟就恢复了，
+  但这说明"能点"和"该点"是两件事。于是加两道锁：
+    1) 内容没读完（loaded=false）不许发布，按钮同时禁用
+    2) 要发出去的文章比仓库里现有的还少 —— 直接拒绝（管理台没有删除功能，
+       数量变少必然是状态错乱，不是用户的意图） */
+function guard() {
+  if (!S.loaded) {
+    logBad('仓库内容还没读完（右上角显示"正在读取"时不要发布）—— 请稍等再点。');
+    return false;
+  }
+  const remotePosts = [...S.remoteBlobs.keys()].filter((p) => /^posts\/[^/]+\.html$/.test(p));
+  if (S.posts.length < remotePosts.length) {
+    logBad(
+      `拒发：内存里只有 ${S.posts.length} 篇，仓库里却有 ${remotePosts.length} 篇 —— 这样发出去会删掉文章。请点「重新读取仓库」后再操作。`
+    );
+    return false;
+  }
+  return true;
+}
+
+function setBusy(busy) {
+  for (const id of ['btn-new', 'btn-save', 'btn-save-bio', 'btn-check', 'btn-reload']) {
+    const el = $(id);
+    if (el) el.disabled = busy;
+  }
+}
+
 /* ------------------------------------------------------------------ 发布 */
 async function publish(message, extraFiles = {}) {
+  if (!guard()) throw new Error('发布前的检查没有通过');
   const p = await plan(extraFiles);
   if (!p.changed.length && !p.deletions.length) {
     logOk('没有任何改动 —— 仓库已经是最新的');
@@ -559,11 +592,20 @@ function bind() {
   $('btn-new').addEventListener('click', () => openEditor(null));
   $('btn-reload').addEventListener('click', async () => {
     log('重新读取仓库…');
-    await loadRemote();
-    renderPostList();
-    fillCategories();
-    renderBio();
-    logOk('已重新读取 _src/posts.json 与 _src/site.json');
+    setBusy(true);
+    S.loaded = false;
+    try {
+      await loadRemote();
+      S.loaded = true;
+      renderPostList();
+      fillCategories();
+      renderBio();
+      logOk('已重新读取 _src/posts.json 与 _src/site.json');
+    } catch (e) {
+      logBad('重新读取失败：' + e.message);
+    } finally {
+      setBusy(false);
+    }
   });
   $('btn-cancel').addEventListener('click', () => $('editor').classList.add('a-hidden'));
   $('btn-preview').addEventListener('click', () => {
@@ -601,6 +643,7 @@ function bind() {
 
   /* 保存文章 */
   $('btn-save').addEventListener('click', async () => {
+    if (!guard()) return;
     let rec;
     try {
       rec = collectPost();
@@ -653,6 +696,7 @@ function bind() {
   });
 
   $('btn-save-bio').addEventListener('click', async () => {
+    if (!guard()) return;
     const bio = bioParagraphs();
     if (!bio.length) {
       logBad('简介不能为空');
@@ -682,6 +726,10 @@ function bind() {
 
   /* 自检 */
   $('btn-check').addEventListener('click', async () => {
+    if (!S.loaded) {
+      logBad('仓库内容还没读完，等一下再自检。');
+      return;
+    }
     $('check-msg').textContent = '渲染并比对中…';
     $('btn-check').disabled = true;
     try {
@@ -759,8 +807,8 @@ async function enterApp() {
   $('gate').classList.add('a-hidden');
   $('app').classList.remove('a-hidden');
   $('btn-forget').classList.remove('a-hidden');
-  $('who').textContent = `已连接：${S.login} · ${OWNER}/${REPO}`;
-  log(`已连接 ${S.login}，读取仓库内容…`);
+  $('who').textContent = `已连接：${S.login}（正在读取仓库内容…）`;
+  setBusy(true);
   try {
     await loadRemote();
   } catch (e) {
@@ -768,9 +816,12 @@ async function enterApp() {
     if (e.status === 404) {
       logWarn('仓库里还没有 _src/ —— 先在本机跑一次 build_site.mjs + push_site.mjs 把数据源推上去。');
     }
-    $('who').textContent = `已连接：${S.login}（读取失败）`;
+    $('who').textContent = `已连接：${S.login}（读取失败，未就绪）`;
     return;
   }
+  S.loaded = true;
+  setBusy(false);
+  $('who').textContent = `已连接：${S.login} · ${OWNER}/${REPO}`;
   renderPostList();
   fillCategories();
   renderBio();
