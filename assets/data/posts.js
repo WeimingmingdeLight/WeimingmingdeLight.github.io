@@ -1,6 +1,21 @@
 /* Aphelion 文章索引 —— 由构建脚本生成，供站内搜索使用 */
 window.APHELION_POSTS = [
   {
+    "slug": "round9-deltest",
+    "title": "【自测】删除功能验证（马上删掉）",
+    "shortTitle": "【自测】删除功能验证（马上删掉）",
+    "summary": "这篇只用来验证「删除」能不能把站点恢复原样。",
+    "category": "杂文",
+    "series": "",
+    "tags": [
+      "自测"
+    ],
+    "date": "2026-10-02",
+    "cjk": 26,
+    "cover": "assets/img/covers/round9-deltest.jpg",
+    "url": "posts/round9-deltest.html"
+  },
+  {
     "slug": "die-for-you-chapter-1",
     "title": "【cgds/智语深眸】Die for you（卷一）chapter 1",
     "shortTitle": "Die for you（卷一）chapter 1",
