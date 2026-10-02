@@ -1825,5 +1825,56 @@
         "x": "总之，感谢阅读，希望下次我能带来更精彩的故事"
       }
     ]
+  },
+  {
+    "slug": "round8-selftest",
+    "title": "【自测】发布链路验证（稍后下线）",
+    "shortTitle": "【自测】发布链路验证（稍后下线）",
+    "subtitle": "",
+    "category": "杂文",
+    "series": "",
+    "tags": [
+      "自测"
+    ],
+    "date": "2026-10-02",
+    "cover": "assets/img/covers/round8-selftest.jpg",
+    "coverAlt": "自测用图：深蓝海水中漂浮的水母与鱼群",
+    "headLabel": "",
+    "summary": "正文结束。",
+    "cjk": 4,
+    "readingMinutes": 1,
+    "url": "posts/round8-selftest.html",
+    "sourceFile": "",
+    "head": [
+      {
+        "t": "p",
+        "x": "这是一次发布链路自测：由站内管理台在浏览器里渲染并提交，稍后会立刻下线。"
+      },
+      {
+        "t": "h2",
+        "x": "自测小标题"
+      },
+      {
+        "t": "quote",
+        "x": "这一段用来验证引用语法"
+      }
+    ],
+    "blocks": [
+      {
+        "t": "hr"
+      },
+      {
+        "t": "ul",
+        "items": [
+          "列表第一项",
+          "列表第二项"
+        ]
+      },
+      {
+        "t": "p",
+        "x": "正文结束。"
+      }
+    ],
+    "coverV": "mur8jeoi"
   }
 ]
