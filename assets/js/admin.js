@@ -96,6 +96,9 @@ async function api(path, { method = 'GET', body } = {}) {
       'X-GitHub-Api-Version': '2022-11-28',
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    /* 没有超时的话，一个卡住的请求会让整个管理台停在"正在读取"上，
+       界面上什么都不说 —— 比报错更让人摸不着头脑。 */
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) {
     let detail = '';
@@ -127,6 +130,7 @@ async function getRawText(path) {
         Accept: 'application/vnd.github.raw',
         'X-GitHub-Api-Version': '2022-11-28',
       },
+      signal: AbortSignal.timeout(30000),
     }
   );
   if (!res.ok) {
@@ -139,13 +143,16 @@ async function getRawText(path) {
 
 async function loadRemote() {
   const base = `/repos/${OWNER}/${REPO}`;
+  logDim('① 读分支文件清单…');
   const tree = await api(`${base}/git/trees/${BRANCH}?recursive=1`);
+  S.remoteBlobs = new Map((tree.tree || []).filter((t) => t.type === 'blob').map((t) => [t.path, t.sha]));
+  logDim(`② 读数据源（仓库里共 ${S.remoteBlobs.size} 个文件）…`);
   S.postsText = await getRawText('_src/posts.json');
   S.siteText = await getRawText('_src/site.json');
   S.posts = JSON.parse(S.postsText);
   S.site = JSON.parse(S.siteText);
   if (!Array.isArray(S.posts)) throw new Error('_src/posts.json 不是数组');
-  S.remoteBlobs = new Map((tree.tree || []).filter((t) => t.type === 'blob').map((t) => [t.path, t.sha]));
+  logDim('③ 读图库清单…');
 
   /* 图库：清单 ∩ 实际存在的编号（浏览器做不到 existsSync，所以用构建时生成的 index） */
   const rd = async (p) => {
