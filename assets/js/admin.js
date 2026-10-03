@@ -109,7 +109,10 @@ async function api(path, { method = 'GET', body } = {}) {
 /* ------------------------------------------------------------------ 读取仓库 */
 /** 用 raw 媒体类型读文本：绕开 Contents API 对 >1MB 文件不再返回 content 的限制
     （文章多了以后 _src/posts.json 会超过 1MB，那时 base64 那条路就断了）。
-    加 cb 是防 CDN：刚提交完立刻读同一个 URL，GitHub 可能还是旧的那一份。 */
+    加 cb 是防 CDN：刚提交完立刻读同一个 URL，GitHub 可能还是旧的那一份。
+    注意：**不要加 Cache-Control 之类的请求头** —— GitHub 的 CORS 预检不接受它，
+    整个请求会直接失败（第 9 轮实测踩到，浏览器控制台报 "Request header field
+    cache-control is not allowed by Access-Control-Allow-Headers"）。 */
 async function getRawText(path) {
   const res = await fetch(
     `${API}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}&cb=${Date.now().toString(36)}`,
@@ -117,7 +120,6 @@ async function getRawText(path) {
       headers: {
         Authorization: 'Bearer ' + S.token,
         Accept: 'application/vnd.github.raw',
-        'Cache-Control': 'no-cache',
         'X-GitHub-Api-Version': '2022-11-28',
       },
     }
