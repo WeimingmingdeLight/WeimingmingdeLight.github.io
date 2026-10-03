@@ -102,7 +102,6 @@
         escapeHtml(p.category) +
         '</span>' +
         (p.date ? '<span>' + escapeHtml(p.date) + '</span>' : '') +
-        (p.cjk ? '<span>' + escapeHtml(String(p.cjk)) + ' 字</span>' : '') +
         '</span>' +
         (it.summary
           ? '<span class="search__item-meta" style="margin-top:4px;display:block">' +

@@ -125,14 +125,16 @@ export function coverUrl(p, base) {
 
 /**
  * 生成全部页面。ctx：
- *   { site, posts, galleryItems, today }
+ *   { site, posts, today }
  * 返回 { files: [{rel, content}], manifest: [rel], report: [...] }
  * files 的**顺序即 manifest 顺序**，浏览器端与 Node 端必须一致（便于逐项比对）。
+ *
+ * 第 10 轮起不再接收 galleryItems：素材库（图库）只在管理台里作为"挑封面"的名单存在，
+ * 公开页面上不再展示 —— 见 build_site.mjs 里仍然生成的 assets/img/gallery-index.json。
  */
 export function renderAll(ctx) {
   const site = mergeSite(ctx.site);
   const posts = sortPosts(ctx.posts || []);
-  const galleryItems = ctx.galleryItems || [];
   const files = [];
   const add = (rel, content) => files.push({ rel, content });
 
@@ -221,16 +223,6 @@ document.documentElement.className=document.documentElement.className.replace('n
 </div>`;
   }
 
-  function lightbox() {
-    return `<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="图片查看" aria-hidden="true">
-  <button class="lightbox__close" type="button" data-lightbox-close aria-label="关闭">${ICON.close}</button>
-  <button class="lightbox__btn lightbox__btn--prev" type="button" data-lightbox-prev aria-label="上一张">${ICON.left}</button>
-  <button class="lightbox__btn lightbox__btn--next" type="button" data-lightbox-next aria-label="下一张">${ICON.right}</button>
-  <div class="lightbox__stage"><img class="lightbox__img" data-lightbox-img src="" alt=""></div>
-  <p class="lightbox__caption" data-lightbox-caption></p>
-</div>`;
-  }
-
   function footer(base, withNote) {
     return `<footer class="footer">
   <div class="container footer__inner">
@@ -242,6 +234,7 @@ document.documentElement.className=document.documentElement.className.replace('n
       <a href="${base}guestbook.html">留言板</a>
       <a href="${base}contact.html">联系方式</a>
     </nav>
+    <p class="footer__admin"><a href="${base}admin.html" rel="nofollow">管理</a></p>
     ${withNote ? `<p class="footer__note">${esc(site.footerNote)}</p>` : ''}
   </div>
 </footer>`;
@@ -255,7 +248,6 @@ document.documentElement.className=document.documentElement.className.replace('n
 <script src="${base}assets/js/nav.js"></script>
 <script src="${base}assets/js/reveal.js"></script>
 <script src="${base}assets/js/search.js"></script>
-<script src="${base}assets/js/lightbox.js"></script>
 <script src="${base}assets/js/main.js"></script>
 ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
 </body>
@@ -308,8 +300,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
       <span>${esc(p.date)}</span>
       <span class="meta-dot"></span>
       <span>${esc(p.category)}</span>
-      <span class="meta-dot"></span>
-      <span>${p.cjk} 字 · 约 ${p.readingMinutes} 分钟</span>
     </div>
     <div class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
   </div>
@@ -326,9 +316,7 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
     <h3 class="work-card__title">${esc(p.title)}</h3>
     <p class="work-card__excerpt">${esc(p.summary)}</p>
     <div class="work-card__facts">
-      <span>${p.cjk} 字</span>
-      <span class="meta-dot"></span>
-      <span>约 ${p.readingMinutes} 分钟</span>
+      <span>${esc(p.date)}</span>
       ${p.series ? `<span class="meta-dot"></span><span>${esc(p.series)}</span>` : ''}
     </div>
     <div class="work-card__foot">
@@ -501,7 +489,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         body,
         footer('', true),
         searchModal(''),
-        lightbox(),
         scripts(''),
       ].join('\n')
     );
@@ -515,10 +502,7 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
   <div class="container">
     <div class="page-head">
       <h1 class="page-head__title">文章</h1>
-      <p class="page-head__desc">共 ${posts.length} 篇 · 合计约 ${posts.reduce(
-      (s, p) => s + p.cjk,
-      0
-    )} 字</p>
+      <p class="page-head__desc">共 ${posts.length} 篇</p>
     </div>
 
     <div class="filter-bar">
@@ -569,7 +553,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         body,
         footer('', false),
         searchModal(''),
-        lightbox(),
         scripts('', 'blog.js'),
       ].join('\n')
     );
@@ -581,7 +564,7 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
   <div class="container">
     <div class="page-head">
       <h1 class="page-head__title">作品集</h1>
-      <p class="page-head__desc">写过的故事，以及平时收着的图。</p>
+      <p class="page-head__desc">写过的故事。</p>
     </div>
   </div>
 
@@ -593,33 +576,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
       </div>
     </div>
   </section>
-
-  <section class="section section--tight">
-    <div class="container">
-      <div class="section__head">
-        <h2 class="section__title">图库</h2>
-        <span class="section__more">${galleryItems.length} 张 · 点击放大</span>
-      </div>
-      <div class="list-note">
-        ${ICON.info}
-        <span>这里是我平时收着的图，作为文章配图与版面素材使用，并非本人绘制。</span>
-      </div>
-      <div class="gallery reveal">
-        ${galleryItems
-          .map((g) => {
-            const long = 480;
-            const tw = g.w >= g.h ? long : Math.round((long * g.w) / g.h);
-            const th = g.w >= g.h ? Math.round((long * g.h) / g.w) : long;
-            return `<button class="gallery__item" type="button" data-lightbox="assets/img/${esc(
-              g.src
-            )}" data-caption="${esc(g.caption)}" aria-label="放大查看：${esc(g.caption || g.id)}">
-          <img src="assets/img/${esc(g.thumb)}" alt="${esc(g.caption)}" width="${tw}" height="${th}" loading="lazy" decoding="async">
-        </button>`;
-          })
-          .join('\n        ')}
-      </div>
-    </div>
-  </section>
 </main>`;
 
     add(
@@ -628,14 +584,13 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         head({
           base: '',
           title: '作品集',
-          desc: `${site.name} 的作品集：文字作品与图库。`,
+          desc: `${site.name} 的作品集：文字作品。`,
           canonical: site.url + '/portfolio.html',
         }),
         nav('', 'portfolio'),
         body,
         footer('', false),
         searchModal(''),
-        lightbox(),
         scripts(''),
       ].join('\n')
     );
@@ -707,7 +662,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         body,
         footer('', true),
         searchModal(''),
-        lightbox(),
         scripts(''),
       ].join('\n')
     );
@@ -748,7 +702,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         body,
         footer('', false),
         searchModal(''),
-        lightbox(),
         scripts('', 'giscus.js'),
       ].join('\n')
     );
@@ -776,7 +729,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
         body,
         footer('/', false),
         searchModal('/'),
-        lightbox(),
         scripts('/'),
       ].join('\n')
     );
@@ -813,8 +765,6 @@ ${extra ? `<script src="${base}assets/js/${extra}"></script>` : ''}
           <span>${esc(p.date)}</span>
           <span class="meta-dot"></span>
           <span>${esc(p.category)}${p.series ? ' › ' + esc(p.series) : ''}</span>
-          <span class="meta-dot"></span>
-          <span>${p.cjk} 字 · 约 ${p.readingMinutes} 分钟</span>
         </div>
         <div class="tags">
           ${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('\n          ')}
@@ -867,7 +817,6 @@ ${renderBlocks(p.blocks)}
         body,
         footer('../', false),
         searchModal('../'),
-        lightbox(),
         scripts('../', 'giscus.js'),
       ].join('\n')
     );
@@ -884,7 +833,6 @@ ${renderBlocks(p.blocks)}
       series: p.series,
       tags: p.tags,
       date: p.date,
-      cjk: p.cjk,
       cover: p.cover,
       url: p.url,
     }));
@@ -938,7 +886,7 @@ ${renderBlocks(p.blocks)}
 export const PAGE_DEPS = {
   'index.html': ['posts', 'site'],
   'blog.html': ['posts'],
-  'portfolio.html': ['posts', 'gallery'],
+  'portfolio.html': ['posts'],
   'contact.html': ['site'],
   'guestbook.html': ['site'],
   '404.html': [],

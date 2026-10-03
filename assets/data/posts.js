@@ -13,7 +13,6 @@ window.APHELION_POSTS = [
       "星际"
     ],
     "date": "2026-09-20",
-    "cjk": 4319,
     "cover": "assets/img/covers/die-for-you-chapter-1.jpg",
     "url": "posts/die-for-you-chapter-1.html"
   },
@@ -30,7 +29,6 @@ window.APHELION_POSTS = [
       "短篇"
     ],
     "date": "2026-09-06",
-    "cjk": 7258,
     "cover": "assets/img/covers/zhi-chi-zhi-jian.jpg",
     "url": "posts/zhi-chi-zhi-jian.html"
   },
@@ -47,7 +45,6 @@ window.APHELION_POSTS = [
       "联机"
     ],
     "date": "2026-08-09",
-    "cjk": 6978,
     "cover": "assets/img/covers/zhuo-chong-si-yang-ri-ji.jpg",
     "url": "posts/zhuo-chong-si-yang-ri-ji.html"
   }

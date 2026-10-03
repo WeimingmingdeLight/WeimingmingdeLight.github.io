@@ -332,7 +332,7 @@ function renderPostList() {
     t.textContent = p.title;
     const m = document.createElement('div');
     m.className = 'a-list__meta';
-    m.textContent = `${p.slug} · ${p.date} · ${p.category} · ${p.cjk} 字/${p.readingMinutes} 分钟`;
+    m.textContent = `${p.slug} · ${p.date} · ${p.category}`;
     main.appendChild(t);
     main.appendChild(m);
     li.appendChild(main);
@@ -503,17 +503,26 @@ function currentParse() {
 
 function updateParseNote() {
   const { blocks, mode } = currentParse();
-  const cjk = blocks
-    .filter((b) => b.t === 'p' || b.t === 'h2' || b.t === 'quote')
-    .map((b) => b.x)
-    .join('\n')
-    .match(/[\u4e00-\u9fff]/g);
-  const n = cjk ? cjk.length : 0;
   const kinds = {};
   for (const b of blocks) kinds[b.t] = (kinds[b.t] || 0) + 1;
-  $('parse-note').textContent =
-    `解析出 ${blocks.length} 块（${Object.entries(kinds).map(([k, v]) => k + ':' + v).join(' ')}），` +
-    `正文 ${n} 字 ≈ ${Math.max(1, Math.round(n / 400))} 分钟；分段方式：${mode === 'blank' ? '空行分段' : '每行一段'}`;
+  const lines = [`解析出 ${blocks.length} 块（${Object.entries(kinds).map(([k, v]) => k + ':' + v).join(' ')}），分段方式：${mode === 'blank' ? '空行分段' : '每行一段'}`];
+
+  /* 第 10 轮：不再显示字数（作者自己的字数口径和这里不一致，容易误导）。
+     但两件"会出事"的事必须提醒：
+       · 单篇超过 7 万字（当初定下的拆分上限）；
+       · 从 PDF 复制时英文词间空格被吞掉（`Rightthen,that'sall…`），
+         顺着这个提示去原文里补空格即可，发布了才发现就要重发一次。 */
+  const bodyCjk = (blocks.filter((b) => b.t === 'p' || b.t === 'h2' || b.t === 'quote').map((b) => b.x).join('\n').match(/[\u4e00-\u9fff]/g) || []).length;
+  if (bodyCjk > 70000) lines.push(`⚠ 正文中文字数约 ${bodyCjk}，超过单篇 70000 字的上限，建议拆成多篇`);
+
+  const glued = new Set();
+  for (const b of blocks) {
+    const t = (b.t === 'ol' || b.t === 'ul' ? b.items.join('\n') : b.x) || '';
+    for (const m of t.matchAll(/[A-Za-z]{10,}/g)) glued.add(m[0]);
+  }
+  if (glued.size) lines.push(`⚠ 有 ${glued.size} 处英文像是粘在一起（如 ${[...glued][0].slice(0, 24)}…）—— 多半是从 PDF 复制时词间空格丢了，请回原文补空格`);
+
+  $('parse-note').textContent = lines.join('；');
 }
 
 /** 前置信息：把正文开头连续的"像元信息/编号/注"的行切出来 —— 与本地流程同一判据（分隔线优先） */

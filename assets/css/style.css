@@ -1328,49 +1328,9 @@ a.tag:hover,
 }
 
 /* ------------------------------------------------------------ 9 组件 */
-/* 图库网格 */
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: var(--s3);
-}
+/* （第 10 轮：图库网格的样式已随公开页面上的素材库一起撤掉） */
 
-.gallery__item {
-  position: relative;
-  display: block;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--bg-inset);
-  aspect-ratio: 4 / 3;
-  border: 1px solid var(--line);
-  cursor: zoom-in;
-}
-
-.gallery__item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: var(--img-filter);
-  transition: transform 0.45s ease, opacity 0.3s ease;
-}
-
-.gallery__item:hover img {
-  transform: scale(1.06);
-}
-
-.gallery__item::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(20, 30, 42, 0);
-  transition: background-color 0.3s ease;
-}
-
-.gallery__item:hover::after {
-  background: rgba(20, 30, 42, 0.18);
-}
-
-/* 作品集与图库之间的分隔说明 */
+/* 列表页/页脚那种一行小注 */
 .list-note {
   display: flex;
   align-items: flex-start;
@@ -1763,105 +1723,6 @@ a.tag:hover,
   flex-wrap: wrap;
 }
 
-/* --------------------------------------------------------- 11 灯箱 */
-.lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 190;
-  display: none;
-  background: var(--overlay);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.lightbox.is-open {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--s5);
-}
-
-.lightbox__stage {
-  max-width: min(1100px, 94vw);
-  max-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lightbox__img {
-  max-width: 100%;
-  max-height: 80vh;
-  width: auto;
-  height: auto;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-  object-fit: contain;
-}
-
-.lightbox__caption {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.85rem;
-  margin-top: var(--s4);
-  text-align: center;
-}
-
-.lightbox__btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease;
-}
-
-.lightbox__btn:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-
-.lightbox__btn svg {
-  width: 22px;
-  height: 22px;
-}
-
-.lightbox__btn--prev {
-  left: max(12px, 3vw);
-}
-
-.lightbox__btn--next {
-  right: max(12px, 3vw);
-}
-
-.lightbox__close {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lightbox__close:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-
-.lightbox__close svg {
-  width: 20px;
-  height: 20px;
-}
-
 /* ------------------------------------------------------------ 12 页脚 */
 .footer {
   margin-top: auto;
@@ -1887,6 +1748,20 @@ a.tag:hover,
 }
 
 .footer__links a:hover {
+  color: var(--accent);
+}
+
+/* 站内管理台入口：不显眼，但作者需要时找得到（页面本身 noindex + robots 禁止收录，
+   没有令牌的人点进去只有一个输入框，什么也做不了） */
+.footer__admin a {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+}
+
+.footer__admin a:hover {
+  opacity: 1;
   color: var(--accent);
 }
 
@@ -2129,10 +2004,6 @@ a.tag:hover,
 }
 
 @media (max-width: 420px) {
-  .gallery {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .hero__actions .btn {
     flex: 1;
     justify-content: center;

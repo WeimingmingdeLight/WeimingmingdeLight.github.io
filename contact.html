@@ -116,6 +116,7 @@ document.documentElement.className=document.documentElement.className.replace('n
       <a href="guestbook.html">留言板</a>
       <a href="contact.html">联系方式</a>
     </nav>
+    <p class="footer__admin"><a href="admin.html" rel="nofollow">管理</a></p>
     <p class="footer__note">本站由纯 HTML / CSS / JavaScript 手写构建，托管于 GitHub Pages，无框架、无追踪。留言板使用开源项目 giscus 读取本站仓库的 GitHub Discussions，只有该页会请求 giscus.app。站内同人作品为非商业性二次创作，相关角色与世界观版权归原作者所有。文章日期为整理归档顺序，不代表创作日期。</p>
   </div>
 </footer>
@@ -133,13 +134,6 @@ document.documentElement.className=document.documentElement.className.replace('n
     </div>
   </div>
 </div>
-<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="图片查看" aria-hidden="true">
-  <button class="lightbox__close" type="button" data-lightbox-close aria-label="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-  <button class="lightbox__btn lightbox__btn--prev" type="button" data-lightbox-prev aria-label="上一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-  <button class="lightbox__btn lightbox__btn--next" type="button" data-lightbox-next aria-label="下一张"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-  <div class="lightbox__stage"><img class="lightbox__img" data-lightbox-img src="" alt=""></div>
-  <p class="lightbox__caption" data-lightbox-caption></p>
-</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button class="to-top" type="button" data-to-top aria-label="回到顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 <script src="assets/data/posts.js"></script>
@@ -147,7 +141,6 @@ document.documentElement.className=document.documentElement.className.replace('n
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/reveal.js"></script>
 <script src="assets/js/search.js"></script>
-<script src="assets/js/lightbox.js"></script>
 <script src="assets/js/main.js"></script>
 
 </body>
