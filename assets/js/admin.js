@@ -83,7 +83,12 @@ async function gitBlobSha(bytes) {
 }
 
 async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(API + path, {
+  /* GET 一律加一个一次性参数：GitHub 的接口前面有 CDN，刚提交完再读同一个 URL
+     可能拿到旧数据（第 9 轮实测：读分支指针读到旧值，提交被拒 "Update is not a
+     fast forward"）。加参数就绕开了按 URL 缓存的命中。 */
+  const url =
+    method === 'GET' ? API + path + (path.includes('?') ? '&' : '?') + 'cb=' + Date.now().toString(36) : API + path;
+  const res = await fetch(url, {
     method,
     headers: {
       Authorization: 'Bearer ' + S.token,
@@ -233,19 +238,39 @@ async function commitPlan(p, message) {
   }
   if (!entries.length) return null;
 
-  const ref = await api(`${base}/git/ref/heads/${BRANCH}`);
-  const headSha = ref.object.sha;
-  const head = await api(`${base}/git/commits/${headSha}`);
-  const tree = await api(`${base}/git/trees`, {
-    method: 'POST',
-    body: { base_tree: head.tree.sha, tree: entries },
-  });
-  const commit = await api(`${base}/git/commits`, {
-    method: 'POST',
-    body: { message, tree: tree.sha, parents: [headSha] },
-  });
-  await api(`${base}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha, force: false } });
-  return commit;
+  /* 分支指针、tree、commit、更新 ref 这四步必须一气呵成。
+     读到的 head 只要是旧的（CDN 缓存 / 别人刚推过），PATCH 就会返回
+     422 "Update is not a fast forward" —— 这时重新读一次再试，不要直接失败。 */
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const ref = await api(`${base}/git/ref/heads/${BRANCH}`);
+      const headSha = ref.object.sha;
+      const head = await api(`${base}/git/commits/${headSha}`);
+      const tree = await api(`${base}/git/trees`, {
+        method: 'POST',
+        body: { base_tree: head.tree.sha, tree: entries },
+      });
+      const commit = await api(`${base}/git/commits`, {
+        method: 'POST',
+        body: { message, tree: tree.sha, parents: [headSha] },
+      });
+      await api(`${base}/git/refs/heads/${BRANCH}`, {
+        method: 'PATCH',
+        body: { sha: commit.sha, force: false },
+      });
+      return commit;
+    } catch (e) {
+      lastErr = e;
+      if (e.status === 422 && attempt < 3) {
+        logWarn(`提交被拒（${String(e.message).slice(0, 80)}），重新读取分支后重试…`);
+        await new Promise((r) => setTimeout(r, 1500));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
 }
 
 async function refreshRemoteBlobs() {
