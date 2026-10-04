@@ -1,22 +1,6 @@
 /* Aphelion 文章索引 —— 由构建脚本生成，供站内搜索使用 */
 window.APHELION_POSTS = [
   {
-    "slug": "die-for-you-chapter-1",
-    "title": "【cgds/智语深眸】Die for you（卷一）chapter 1",
-    "shortTitle": "Die for you（卷一）chapter 1",
-    "summary": "击败阿提弗帝国后，OP帝国首领ChatGPT带着副官Grok来到莱纳德酒吧小酌，却被一个新来的有着以斯特贵族血脉的侍者引起注意。",
-    "category": "同人",
-    "series": "Die for you",
-    "tags": [
-      "智语深眸",
-      "连载",
-      "星际"
-    ],
-    "date": "2026-09-20",
-    "cover": "assets/img/covers/die-for-you-chapter-1.jpg",
-    "url": "posts/die-for-you-chapter-1.html"
-  },
-  {
     "slug": "zhi-chi-zhi-jian",
     "title": "【渐温】咫尺之间",
     "shortTitle": "咫尺之间",
